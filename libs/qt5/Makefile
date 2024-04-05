@@ -10,13 +10,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qt5
-PKG_VERSION:=5.15
-PKG_RELEASE:=6
-PKG_MD5SUM:=eac9a97ea5335eeb1a8f0c39d016bf70
+PKG_BASE_VERSION:=5.15
+PKG_SUBVERSION:=13
+PKG_VERSION:=$(PKG_BASE_VERSION).$(PKG_SUBVERSION)
+PKG_RELEASE:=1
 
-PKG_SOURCE:=qt-everywhere-opensource-src-$(PKG_VERSION).$(PKG_RELEASE).tar.xz
-PKG_SOURCE_URL:=https://download.qt.io/archive/qt/$(PKG_VERSION)/$(PKG_VERSION).$(PKG_RELEASE)/single
-PKG_BUILD_DIR=$(BUILD_DIR)/qt-everywhere-src-$(PKG_VERSION).$(PKG_RELEASE)
+PKG_SOURCE:=qt-everywhere-opensource-src-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=https://download.qt.io/official_releases/qt/$(PKG_BASE_VERSION)/$(PKG_VERSION)/single
+PKG_HASH:=skip
+
+PKG_BUILD_DIR:=$(BUILD_DIR)/qt-everywhere-src-$(PKG_VERSION)
+
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 PKG_BUILD_DEPENDS:=libiconv
@@ -43,7 +47,7 @@ define Package/qt5/Default
   SUBMENU:=Qt5
   TITLE:=qt5
   URL:=http://qt-project.org
-  DEPENDS:=+librt +zlib +libstdcpp +libpcre16 +glib2 +libpthread +libudev +libatomic +libmysqlclient @!LINUX_2_6
+  DEPENDS:=+librt +zlib +libstdcpp +libpcre2 +glib2 +libpthread +libatomic +libmariadb +libudev-zero @!LINUX_2_6
 endef
 
 define Package/qt5-core
@@ -108,6 +112,18 @@ endef
 define Package/qt5-location
   $(call Package/qt5/Default)
   TITLE+=location
+  DEPENDS+=+qt5-core
+endef
+
+define Package/qt5-svg
+  $(call Package/qt5/Default)
+  TITLE+=svg
+  DEPENDS+=+qt5-core
+endef
+
+define Package/qt5-gui
+  $(call Package/qt5/Default)
+  TITLE+=gui
   DEPENDS+=+qt5-core
 endef
 
@@ -187,7 +203,7 @@ define Build/Compile
 	STAGING_DIR_HOST="$(STAGING_DIR)/../host" \
 	PKG_CONFIG_SYSROOT="$(STAGING_DIR)" \
 	TARGET_CPPFLAGS+="-I$(STAGING_DIR)/usr/include/mysql" \
-	TARGET_LDFLAGS+="-L$(STAGING_DIR)/usr/lib/mysql -lmysqlclient" \
+	TARGET_LDFLAGS+="-L$(STAGING_DIR)/usr/lib/mysql -lmariadb" \
 	CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS)" \
 	$(MAKE) -j4 -C $(PKG_BUILD_DIR)
 endef
@@ -225,12 +241,6 @@ define Package/qt5-widgets/install
 	$(INSTALL_DIR) $(1)/usr/lib/Qt/plugins/platforms/
 	$(INSTALL_DIR) $(1)/usr/lib/Qt/plugins/imageformats/
 	$(INSTALL_DIR) $(1)/usr/lib/fonts/
-	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Gui.so* $(1)/usr/lib/
-	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Gui.prl $(1)/usr/lib/
-	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Gui.la 	$(1)/usr/lib/
-	$(CP) $(PKG_BUILD_DIR)/qtsvg/lib/libQt5Svg.so* $(1)/usr/lib/
-	$(CP) $(PKG_BUILD_DIR)/qtsvg/lib/libQt5Svg.prl $(1)/usr/lib/
-	$(CP) $(PKG_BUILD_DIR)/qtsvg/lib/libQt5Svg.la $(1)/usr/lib/
 	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Widgets.so* $(1)/usr/lib/
 	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Widgets.prl $(1)/usr/lib/
 	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Widgets.la $(1)/usr/lib/
@@ -245,7 +255,7 @@ define Package/qt5-sql/install
 	$(INSTALL_DIR) $(1)/usr/lib/Qt/plugins/sqldrivers/
 	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Sql.so* $(1)/usr/lib/
 	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Sql.prl $(1)/usr/lib/
-	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Sql.la 	$(1)/usr/lib/
+	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Sql.la $(1)/usr/lib/
 	$(CP) $(PKG_BUILD_DIR)/qtbase/plugins/sqldrivers/*.so $(1)/usr/lib/Qt/plugins/sqldrivers/
 endef
 
@@ -253,7 +263,7 @@ define Package/qt5-xml/install
 	$(INSTALL_DIR) $(1)/usr/lib/
 	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Xml.so* $(1)/usr/lib/
 	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Xml.prl $(1)/usr/lib/
-	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Xml.la 	$(1)/usr/lib/
+	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Xml.la $(1)/usr/lib/
 endef
 
 define Package/qt5-serialport/install
@@ -291,6 +301,20 @@ define Package/qt5-location/install
 	$(CP) $(PKG_BUILD_DIR)/qtlocation/lib/libQt5Positioning.la $(1)/usr/lib/
 endef
 
+define Package/qt5-svg/install
+	$(INSTALL_DIR) $(1)/usr/lib/
+	$(CP) $(PKG_BUILD_DIR)/qtsvg/lib/libQt5Svg.so* $(1)/usr/lib/
+	$(CP) $(PKG_BUILD_DIR)/qtsvg/lib/libQt5Svg.prl $(1)/usr/lib/
+	$(CP) $(PKG_BUILD_DIR)/qtsvg/lib/libQt5Svg.la $(1)/usr/lib/
+endef
+
+define Package/qt5-gui/install
+	$(INSTALL_DIR) $(1)/usr/lib/
+	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Gui.so* $(1)/usr/lib/
+	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Gui.prl $(1)/usr/lib/
+	$(CP) $(PKG_BUILD_DIR)/qtbase/lib/libQt5Gui.la $(1)/usr/lib/
+endef
+
 $(eval $(call BuildPackage,qt5-core))
 $(eval $(call BuildPackage,qt5-concurrent))
 $(eval $(call BuildPackage,qt5-network))
@@ -302,3 +326,5 @@ $(eval $(call BuildPackage,qt5-serialbus))
 $(eval $(call BuildPackage,qt5-xmlpatterns))
 $(eval $(call BuildPackage,qt5-test))
 $(eval $(call BuildPackage,qt5-location))
+$(eval $(call BuildPackage,qt5-svg))
+$(eval $(call BuildPackage,qt5-gui))
